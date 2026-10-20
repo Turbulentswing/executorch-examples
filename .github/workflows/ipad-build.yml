@@ -1,17 +1,24 @@
 
-name: Check ExecuTorch Build
+name: Build ExecuTorch iPad
 
 on:
   workflow_dispatch:
 
 jobs:
-  check:
+  build:
     runs-on: macos-15
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: List Xcode schemes
+      - name: Build iPad app
         run: |
-          xcodebuild -list \
-            -project mv3/apple/ExecuTorchDemo/ExecuTorchDemo.xcodeproj
+          xcodebuild \
+            -project mv3/apple/ExecuTorchDemo/ExecuTorchDemo.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            build
