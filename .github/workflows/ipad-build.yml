@@ -1,25 +1,17 @@
 
-name: Inspect ExecuTorch iOS
+name: Check ExecuTorch Build
 
 on:
   workflow_dispatch:
 
 jobs:
-  inspect:
+  check:
     runs-on: macos-15
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: Inspect iOS project
+      - name: List Xcode schemes
         run: |
-          xcodebuild -version
-          echo "DEMO FILES:"
-          ls -la mv3/apple/ExecuTorchDemo
-          echo "XCODE PROJECTS:"
-          find mv3/apple -maxdepth 5 \
-            \( -name "*.xcodeproj" \
-            -o -name "*.xcworkspace" \
-            -o -name "Package.swift" \) \
-            -print
-
+          xcodebuild -list \
+            -project mv3/apple/ExecuTorchDemo/ExecuTorchDemo.xcodeproj
