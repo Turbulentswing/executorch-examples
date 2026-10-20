@@ -1,16 +1,25 @@
 
-name: iPad Build Test
+name: Inspect ExecuTorch iOS
 
 on:
   workflow_dispatch:
 
 jobs:
-  test-mac:
+  inspect:
     runs-on: macos-15
+
     steps:
-      - name: Check macOS and Xcode
+      - uses: actions/checkout@v4
+
+      - name: Inspect iOS project
         run: |
-          uname -m
-          sw_vers
           xcodebuild -version
-          echo "Mac build environment ready!"
+          echo "DEMO FILES:"
+          ls -la mv3/apple/ExecuTorchDemo
+          echo "XCODE PROJECTS:"
+          find mv3/apple -maxdepth 5 \
+            \( -name "*.xcodeproj" \
+            -o -name "*.xcworkspace" \
+            -o -name "Package.swift" \) \
+            -print
+
