@@ -40,7 +40,7 @@ jobs:
           xcodebuild -project LungCAD.xcodeproj -scheme LungCAD \
             -configuration Release -destination 'generic/platform=iOS' \
             -derivedDataPath "$RUNNER_TEMP/LungCADDevice" \
-            CODE_SIGNING_ALLOWED=NO MARKETING_VERSION=0.1.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            CODE_SIGNING_ALLOWED=NO TARGETED_DEVICE_FAMILY=2 MARKETING_VERSION=0.1.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             build | tee "$RUNNER_TEMP/device.log"
       - name: Package and verify device IPA for SideStore signing
         run: |
