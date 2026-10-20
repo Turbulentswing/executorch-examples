@@ -1,0 +1,85 @@
+name: LungCAD build and synthetic tests
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']
+  pull_request:
+    paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: lungcad-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test synthetic DICOM, geometry and postprocessing
+        working-directory: lungcad
+        run: swift test
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate native project
+        working-directory: lungcad
+        run: xcodegen generate
+      - name: Build simulator
+        working-directory: lungcad
+        run: |
+          set -o pipefail
+          xcodebuild -project LungCAD.xcodeproj -scheme LungCAD \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/LungCADSimulator" \
+            CODE_SIGNING_ALLOWED=NO build | tee "$RUNNER_TEMP/simulator.log"
+      - name: Compile unsigned iPad device app
+        working-directory: lungcad
+        run: |
+          set -o pipefail
+          xcodebuild -project LungCAD.xcodeproj -scheme LungCAD \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/LungCADDevice" \
+            CODE_SIGNING_ALLOWED=NO TARGETED_DEVICE_FAMILY=2 MARKETING_VERSION=0.1.0 CURRENT_PROJECT_VERSION=${{ github.run_number }} \
+            build | tee "$RUNNER_TEMP/device.log"
+      - name: Package and verify device IPA for SideStore signing
+        run: |
+          set -euo pipefail
+          APP="$RUNNER_TEMP/LungCADDevice/Build/Products/Release-iphoneos/LungCAD.app"
+          export APP
+          python3 - <<'PY'
+          import os, plistlib
+          from pathlib import Path
+          app = Path(os.environ['APP'])
+          info = plistlib.loads((app / 'Info.plist').read_bytes())
+          assert info['CFBundleSupportedPlatforms'] == ['iPhoneOS'], info
+          assert info['UIDeviceFamily'] == [2], info
+          assert info['CFBundleShortVersionString'] == '0.1.0', info
+          assert info['CFBundleVersion'], info
+          assert (app / info['CFBundleExecutable']).is_file()
+          PY
+          xcrun lipo "$APP/LungCAD" -verify_arch arm64
+          xcrun vtool -show-build "$APP/LungCAD" | tee "$RUNNER_TEMP/device-platform.log"
+          grep -Eq 'platform IOS$' "$RUNNER_TEMP/device-platform.log"
+          mkdir -p "$RUNNER_TEMP/SideStore/Payload" "$RUNNER_TEMP/IPA"
+          ditto "$APP" "$RUNNER_TEMP/SideStore/Payload/LungCAD.app"
+          cd "$RUNNER_TEMP/SideStore"
+          ditto -c -k --keepParent Payload "$RUNNER_TEMP/IPA/LungCAD-SideStore.ipa"
+          cd "$RUNNER_TEMP/IPA"
+          unzip -t LungCAD-SideStore.ipa
+          shasum -a 256 LungCAD-SideStore.ipa > LungCAD-SideStore.ipa.sha256
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LungCAD-SideStore-unsigned-device-IPA
+          path: ${{ runner.temp }}/IPA/*
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LungCAD-build-logs
+          path: ${{ runner.temp }}/*.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LungCAD-simulator-not-installable-on-iPad
+          path: ${{ runner.temp }}/LungCADSimulator/Build/Products/Debug-iphonesimulator/LungCAD.app
+          if-no-files-found: error
