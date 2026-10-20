@@ -58,7 +58,7 @@ jobs:
           assert info['CFBundleVersion'], info
           assert (app / info['CFBundleExecutable']).is_file()
           PY
-          xcrun lipo -verify_arch arm64 "$APP/LungCAD"
+          xcrun lipo "$APP/LungCAD" -verify_arch arm64
           xcrun vtool -show-build "$APP/LungCAD" | tee "$RUNNER_TEMP/device-platform.log"
           grep -Eq 'platform IOS$' "$RUNNER_TEMP/device-platform.log"
           mkdir -p "$RUNNER_TEMP/SideStore/Payload" "$RUNNER_TEMP/IPA"
