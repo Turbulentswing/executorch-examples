@@ -42,9 +42,6 @@ targets:
         optional: true
     dependencies:
       - target: LungCAD
-      - package: LungCADCore
-      - package: ONNXRuntime
-        product: onnxruntime
     settings:
       base:
         GENERATE_INFOPLIST_FILE: YES

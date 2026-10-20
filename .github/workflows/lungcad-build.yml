@@ -2,6 +2,7 @@ name: LungCAD build and synthetic tests
 on:
   workflow_dispatch:
   push:
+    branches: [main]
     paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']
   pull_request:
     paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']

@@ -2,7 +2,14 @@ name: LungCAD synthetic model export validation
 on:
   workflow_dispatch:
   push:
-    paths: ['lungcad/scripts/export_model.py', '.github/workflows/lungcad-model.yml']
+    paths:
+      - 'lungcad/scripts/export_model.py'
+      - 'lungcad/App/**'
+      - 'lungcad/Sources/**'
+      - 'lungcad/IntegrationTests/**'
+      - 'lungcad/project.yml'
+      - 'lungcad/Package.swift'
+      - '.github/workflows/lungcad-model.yml'
 permissions:
   contents: read
 jobs:
