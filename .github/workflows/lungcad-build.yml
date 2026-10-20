@@ -1,0 +1,52 @@
+name: LungCAD build and synthetic tests
+on:
+  workflow_dispatch:
+  push:
+    paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']
+  pull_request:
+    paths: ['lungcad/**', '.github/workflows/lungcad-build.yml']
+permissions:
+  contents: read
+concurrency:
+  group: lungcad-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - name: Test synthetic DICOM, geometry and postprocessing
+        working-directory: lungcad
+        run: swift test
+      - name: Install project generator
+        run: brew install xcodegen
+      - name: Generate native project
+        working-directory: lungcad
+        run: xcodegen generate
+      - name: Build simulator
+        working-directory: lungcad
+        run: |
+          set -o pipefail
+          xcodebuild -project LungCAD.xcodeproj -scheme LungCAD \
+            -configuration Debug -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath "$RUNNER_TEMP/LungCADSimulator" \
+            CODE_SIGNING_ALLOWED=NO build | tee "$RUNNER_TEMP/simulator.log"
+      - name: Compile unsigned iPad device app
+        working-directory: lungcad
+        run: |
+          set -o pipefail
+          xcodebuild -project LungCAD.xcodeproj -scheme LungCAD \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -derivedDataPath "$RUNNER_TEMP/LungCADDevice" \
+            CODE_SIGNING_ALLOWED=NO build | tee "$RUNNER_TEMP/device.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LungCAD-build-logs
+          path: ${{ runner.temp }}/*.log
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LungCAD-simulator-not-installable-on-iPad
+          path: ${{ runner.temp }}/LungCADSimulator/Build/Products/Debug-iphonesimulator/LungCAD.app
+          if-no-files-found: error

@@ -1,0 +1,11 @@
+.build/
+.swiftpm/
+*.xcodeproj/
+*.onnx
+*.pt
+*.dcm
+*.dicom
+*.nii*
+*.mhd
+*.raw
+__pycache__/
