@@ -1,0 +1,16 @@
+
+name: iPad Build Test
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-mac:
+    runs-on: macos-15
+    steps:
+      - name: Check macOS and Xcode
+        run: |
+          uname -m
+          sw_vers
+          xcodebuild -version
+          echo "Mac build environment ready!"
