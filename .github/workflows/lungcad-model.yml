@@ -1,6 +1,8 @@
 name: LungCAD synthetic model export validation
 on:
   workflow_dispatch:
+  push:
+    paths: ['lungcad/scripts/export_model.py', '.github/workflows/lungcad-model.yml']
 permissions:
   contents: read
 jobs:
@@ -25,4 +27,5 @@ jobs:
             ${{ runner.temp }}/model/lungcad.onnx
             ${{ runner.temp }}/model/lungcad.json
             ${{ runner.temp }}/model/validation.json
+            ${{ runner.temp }}/model/LICENSE
           if-no-files-found: error

@@ -33,7 +33,7 @@ GitHub Actions:
 
 - **LungCAD build and synthetic tests**: runs Swift package tests and compiles
   simulator and unsigned device targets. The artifact is a simulator app.
-- **LungCAD synthetic model export validation**: manual workflow downloading only
+- **LungCAD synthetic model export validation**: runs on exporter changes or manually, downloading only
   pinned public pretrained weights and using generated tensors. Produces
   `lungcad.onnx`, `lungcad.json` and `validation.json`.
 

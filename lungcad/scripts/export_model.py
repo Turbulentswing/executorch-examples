@@ -57,6 +57,10 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=True)
+    urllib.request.urlretrieve(
+        f"https://huggingface.co/MONAI/lung_nodule_ct_detection/resolve/{REVISION}/LICENSE",
+        args.output / "LICENSE",
+    )
     torch.set_num_threads(4)
     torch.manual_seed(1729)
     checkpoint = args.output / "model.pt"
