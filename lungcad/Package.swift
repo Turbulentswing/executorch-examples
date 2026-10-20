@@ -7,6 +7,7 @@ let package = Package(
     products: [.library(name: "LungCADCore", targets: ["LungCADCore"])],
     targets: [
         .target(name: "LungCADCore"),
-        .testTarget(name: "LungCADCoreTests", dependencies: ["LungCADCore"])
+        .testTarget(name: "LungCADCoreTests", dependencies: ["LungCADCore"],
+                    resources: [.process("Resources")])
     ]
 )

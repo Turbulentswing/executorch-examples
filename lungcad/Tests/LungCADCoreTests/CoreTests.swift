@@ -3,6 +3,41 @@ import XCTest
 @testable import LungCADCore
 
 final class CoreTests: XCTestCase {
+    func testMONAIPreprocessingReference() throws {
+        struct Reference: Decodable {
+            let sourceSize: [Int]
+            let sourceSpacing: [Double]
+            let sourceOriginLPS: [Double]
+            let sourceHU: [Float]
+            let expectedSize: [Int]
+            let expectedRASOrigin: [Double]
+            let expectedTensor: [Float]
+        }
+        let url = try XCTUnwrap(Bundle.module.url(forResource: "preprocessing", withExtension: "json"))
+        let ref = try JSONDecoder().decode(Reference.self, from: Data(contentsOf: url))
+        let n = ref.sourceSize[0] * ref.sourceSize[1]
+        let slices = (0..<ref.sourceSize[2]).map { z in
+            CTSlice(series: "synthetic", instance: "\(z)", rows: ref.sourceSize[1],
+                    columns: ref.sourceSize[0],
+                    position: [ref.sourceOriginLPS[0], ref.sourceOriginLPS[1],
+                               ref.sourceOriginLPS[2] + Double(z) * ref.sourceSpacing[2]],
+                    orientation: [1, 0, 0, 0, 1, 0],
+                    spacing: [ref.sourceSpacing[1], ref.sourceSpacing[0]],
+                    hu: Array(ref.sourceHU[z * n..<(z + 1) * n]))
+        }
+        let volume = try CTVolume(slices: slices)
+        XCTAssertEqual(Preprocessor.resampledSize(volume), ref.expectedSize)
+        for axis in 0..<3 {
+            XCTAssertEqual(volume.rasOrigin[axis], ref.expectedRASOrigin[axis], accuracy: 1e-6)
+        }
+        let tensor = try Preprocessor.tensor(volume, start: [0, 0, 0])
+        for x in 0..<ref.expectedSize[0] { for y in 0..<ref.expectedSize[1] { for z in 0..<ref.expectedSize[2] {
+            let i = (x * Preprocessor.patch[1] + y) * Preprocessor.patch[2] + z
+            let j = (x * ref.expectedSize[1] + y) * ref.expectedSize[2] + z
+            XCTAssertEqual(tensor[i], ref.expectedTensor[j], accuracy: 1e-5)
+        } } }
+    }
+
     func testSignedPixelsRescaleAndImplicitVR() throws {
         for explicit in [true, false] {
             let slice = try DICOMReader.read(fixture(explicit: explicit, pixels: [0xFFF, 0, 100, 0x800]))

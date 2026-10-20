@@ -28,4 +28,36 @@ jobs:
             ${{ runner.temp }}/model/lungcad.json
             ${{ runner.temp }}/model/validation.json
             ${{ runner.temp }}/model/LICENSE
+            ${{ runner.temp }}/model/uniform-*
           if-no-files-found: error
+  simulator-inference:
+    needs: export
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: LungCAD-experimental-model-synthetic-parity-only
+          path: lungcad/IntegrationTests/Model
+      - run: brew install xcodegen
+      - name: Generate project
+        working-directory: lungcad
+        run: xcodegen generate
+      - name: Run native synthetic inference on iPad simulator
+        working-directory: lungcad
+        run: |
+          set -o pipefail
+          DEVICE_ID=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(x["udid"] for devices in d["devices"].values() for x in devices if "iPad" in x["name"]))')
+          xcodebuild test -project LungCAD.xcodeproj -scheme LungCAD \
+            -destination "platform=iOS Simulator,id=$DEVICE_ID" \
+            -parallel-testing-enabled NO \
+            -resultBundlePath "$RUNNER_TEMP/Inference.xcresult" \
+            CODE_SIGNING_ALLOWED=NO | tee "$RUNNER_TEMP/inference.log"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: LungCAD-native-synthetic-inference-results
+          path: |
+            ${{ runner.temp }}/Inference.xcresult
+            ${{ runner.temp }}/inference.log

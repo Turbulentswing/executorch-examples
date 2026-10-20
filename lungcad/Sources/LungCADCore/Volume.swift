@@ -59,7 +59,7 @@ public enum Preprocessor {
     public static let patch = [96, 96, 64]
 
     public static func resampledSize(_ volume: CTVolume) -> [Int] {
-        (0..<3).map { Int((Double(volume.size[$0] - 1) * volume.spacing[$0] / spacing[$0]).rounded()) + 1 }
+        (0..<3).map { Int((Double(volume.size[$0] - 1) * volume.spacing[$0] / spacing[$0]).rounded(.toNearestOrEven)) + 1 }
     }
 
     public static func starts(length: Int, patch: Int) -> [Int] {

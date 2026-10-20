@@ -30,8 +30,28 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad: "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
+  LungCADIntegrationTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: IntegrationTests
+        excludes: [Model]
+      - path: IntegrationTests/Model
+        type: folder
+        buildPhase: resources
+        optional: true
+    dependencies:
+      - target: LungCAD
+      - package: LungCADCore
+      - package: ONNXRuntime
+        product: onnxruntime
+    settings:
+      base:
+        GENERATE_INFOPLIST_FILE: YES
 schemes:
   LungCAD:
     build:
       targets:
         LungCAD: all
+    test:
+      targets: [LungCADIntegrationTests]

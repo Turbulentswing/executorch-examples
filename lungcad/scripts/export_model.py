@@ -18,6 +18,7 @@ import torch
 from monai.apps.detection.networks.retinanet_network import RetinaNet, resnet_fpn_feature_extractor
 from monai.apps.detection.utils.anchor_utils import AnchorGeneratorWithAnchorShape
 from monai.apps.detection.utils.box_coder import BoxCoder
+from monai.apps.detection.utils.box_selector import BoxSelector
 from monai.networks.nets.resnet import resnet50
 
 REVISION = "9d6622fda0e52be0a4155fed2e0afb9c17bcd80b"
@@ -118,6 +119,20 @@ def main():
         evidence.append({"input": name, "max_absolute_error": [
             float(np.max(np.abs(a - b))) for a, b in zip(reference, actual)
         ]})
+        if name == "uniform":
+            for label, array in zip(["boxes", "scores"], reference):
+                array.astype("<f4").tofile(args.output / f"uniform-{label}.bin")
+            selector = BoxSelector(apply_sigmoid=False, score_thresh=0.02,
+                                   topk_candidates_per_level=1000, nms_thresh=0.22,
+                                   detections_per_img=300)
+            boxes, scores, _ = selector.select_boxes_per_image(
+                list(torch.from_numpy(reference[0]).split(model.level_counts)),
+                list(torch.from_numpy(reference[1]).reshape(-1, 1).split(model.level_counts)),
+                PATCH,
+            )
+            (args.output / "uniform-candidates.json").write_text(json.dumps({
+                "boxes": boxes.tolist(), "scores": scores.tolist(),
+            }))
     manifest = {
         "schema": 1, "revision": REVISION, "patch": PATCH,
         "spacing": [0.703125, 0.703125, 1.25], "levelCounts": model.level_counts,

@@ -80,13 +80,13 @@ actor Detector {
             }
             var offset = 0
             for levelCount in manifest.levelCounts {
-                let selected = (offset..<offset + levelCount).filter { scores[$0] >= 0.02 }
+                let selected = (offset..<offset + levelCount).filter { scores[$0] > 0.02 }
                     .sorted { scores[$0] > scores[$1] }.prefix(1000)
                 for i in selected {
                     let lo = (0..<3).map { max(0, Double(boxes[i * 6 + $0])) }
                     let hi = (0..<3).map { min(Double(Preprocessor.patch[$0]), Double(boxes[i * 6 + 3 + $0])) }
-                    let lowVoxel = (0..<3).map { min(Double(size[$0] - 1), lo[$0] + Double(start[$0])) }
-                    let highVoxel = (0..<3).map { min(Double(size[$0] - 1), hi[$0] + Double(start[$0])) }
+                    let lowVoxel = (0..<3).map { min(Double(size[$0]), lo[$0] + Double(start[$0])) }
+                    let highVoxel = (0..<3).map { min(Double(size[$0]), hi[$0] + Double(start[$0])) }
                     guard (0..<3).allSatisfy({ hi[$0] > lo[$0] && highVoxel[$0] > lowVoxel[$0] }) else { continue }
                     let low = (0..<3).map { volume.rasOrigin[$0] + lowVoxel[$0] * Preprocessor.spacing[$0] }
                     let high = (0..<3).map { volume.rasOrigin[$0] + highVoxel[$0] * Preprocessor.spacing[$0] }
