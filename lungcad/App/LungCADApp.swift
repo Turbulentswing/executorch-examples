@@ -124,16 +124,40 @@ final class StudyModel: ObservableObject {
 struct ContentView: View {
     @StateObject private var model = StudyModel()
     @State private var importCT = false
+    @State private var importCTFiles = false
     @State private var importModel = false
 
     var body: some View {
         NavigationSplitView {
             List {
                 Section("Local inputs") {
-                    Button("Import CT series", systemImage: "square.and.arrow.down") { importCT = true }
+                    Button("Import CT folder", systemImage: "folder") { importCT = true }
                         .disabled(model.busy)
+                        .fileImporter(isPresented: $importCT, allowedContentTypes: [.folder]) { result in
+                            switch result {
+                            case .success(let url): model.importStudy([url])
+                            case .failure(let error): model.status = error.localizedDescription
+                            }
+                        }
+                    Button("Import CT files", systemImage: "doc.on.doc") { importCTFiles = true }
+                        .disabled(model.busy)
+                        // DICOM exports often have unknown extensions or no extension.
+                        // Accept items here; DICOMReader validates their actual contents.
+                        .fileImporter(isPresented: $importCTFiles, allowedContentTypes: [.item],
+                                      allowsMultipleSelection: true) { result in
+                            switch result {
+                            case .success(let urls): model.importStudy(urls)
+                            case .failure(let error): model.status = error.localizedDescription
+                            }
+                        }
                     Button("Import model folder", systemImage: "cpu") { importModel = true }
                         .disabled(model.busy)
+                        .fileImporter(isPresented: $importModel, allowedContentTypes: [.folder]) { result in
+                            switch result {
+                            case .success(let url): model.importModel(url)
+                            case .failure(let error): model.status = error.localizedDescription
+                            }
+                        }
                     Button("Run experimental detection", systemImage: "viewfinder") { model.run() }
                         .disabled(model.busy || !model.ready || model.volume == nil)
                     if model.busy {
@@ -176,19 +200,6 @@ struct ContentView: View {
             } else {
                 ContentUnavailableView("Import a CT series", systemImage: "square.stack.3d.up",
                     description: Text("Uncompressed, single-frame axial DICOM CT. Processing stays on this iPad."))
-            }
-        }
-        .fileImporter(isPresented: $importCT, allowedContentTypes: [.data, .folder],
-                      allowsMultipleSelection: true) { result in
-            switch result {
-            case .success(let urls): model.importStudy(urls)
-            case .failure(let error): model.status = error.localizedDescription
-            }
-        }
-        .fileImporter(isPresented: $importModel, allowedContentTypes: [.folder]) { result in
-            switch result {
-            case .success(let url): model.importModel(url)
-            case .failure(let error): model.status = error.localizedDescription
             }
         }
     }
